@@ -4,7 +4,10 @@ title = "Josh Butts | joshbutts.com"
 theme = "hugo-coder"
 publishDir = "docs"
 googleAnalytics = "UA-158918590-1"
-
+canonifyurls = true
+pygmentsstyle = "b2"
+pygmentscodefences = true
+pygmentscodefencesguesssyntax = true
 
 
 [params]
