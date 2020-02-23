@@ -13,12 +13,14 @@
 <meta name="twitter:title" content="Using Traefik 2 and Docker for local development with multiple projects"/>
 <meta name="twitter:description" content="TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
 https://github.com/jimbojsb/docker-traefik-local-dev
-Background What is Traefik This seems more complicated than doing nothing&hellip; Step 1: Get a real domain name, and host it in public DNS Step 2: Make a new project / Git repo Step 3: Set up the basics of Traefik Step 4: Set up Let&rsquo;s Encrypt for SSL Step 5: Connect an actual project to a subdomain Wrap Up "/>
+Background What is Traefik Traefik is a reverse proxy.
+This seems more complicated than doing nothing&hellip; Step 1: Get a real domain name, and host it in public DNS In order to get &ldquo;real&rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of .dev domains from Google&rsquo;s get."/>
 
     <meta property="og:title" content="Using Traefik 2 and Docker for local development with multiple projects" />
 <meta property="og:description" content="TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
 https://github.com/jimbojsb/docker-traefik-local-dev
-Background What is Traefik This seems more complicated than doing nothing&hellip; Step 1: Get a real domain name, and host it in public DNS Step 2: Make a new project / Git repo Step 3: Set up the basics of Traefik Step 4: Set up Let&rsquo;s Encrypt for SSL Step 5: Connect an actual project to a subdomain Wrap Up " />
+Background What is Traefik Traefik is a reverse proxy.
+This seems more complicated than doing nothing&hellip; Step 1: Get a real domain name, and host it in public DNS In order to get &ldquo;real&rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of .dev domains from Google&rsquo;s get." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://joshbutts.com/posts/traefik-docker-local-dev/" />
 <meta property="article:published_time" content="2020-02-22T00:00:00+00:00" />
@@ -43,7 +45,7 @@ Background What is Traefik This seems more complicated than doing nothing&hellip
     
       
       
-      <link rel="stylesheet" href="/css/coder.min.a4f332213a21ce8eb521670c614470c58923aaaf385e2a73982c31dd7642decb.css" integrity="sha256-pPMyITohzo61IWcMYURwxYkjqq84XipzmCwx3XZC3ss=" crossorigin="anonymous" media="screen" />
+      <link rel="stylesheet" href="https://joshbutts.com/css/coder.min.a4f332213a21ce8eb521670c614470c58923aaaf385e2a73982c31dd7642decb.css" integrity="sha256-pPMyITohzo61IWcMYURwxYkjqq84XipzmCwx3XZC3ss=" crossorigin="anonymous" media="screen" />
     
 
     
@@ -68,7 +70,7 @@ Background What is Traefik This seems more complicated than doing nothing&hellip
     <main class="wrapper">
       <nav class="navigation">
   <section class="container">
-    <a class="navigation-title" href="/">
+    <a class="navigation-title" href="https://joshbutts.com/">
       Josh Butts | joshbutts.com
     </a>
     
@@ -107,15 +109,15 @@ Background What is Traefik This seems more complicated than doing nothing&hellip
             </span>
             <span class="reading-time">
               <i class="fas fa-clock"></i>
-              1-minute read
+              6-minute read
             </span>
           </div>
           
           <div class="tags">
   <i class="fas fa-tag"></i>
-    <a href="/tags/docker/">docker</a>
+    <a href="https://joshbutts.com/tags/docker/">docker</a>
       <span class="separator">•</span>
-    <a href="/tags/traefik/">traefik</a></div>
+    <a href="https://joshbutts.com/tags/traefik/">traefik</a></div>
 
         </div>
       </header>
@@ -127,9 +129,69 @@ Background What is Traefik This seems more complicated than doing nothing&hellip
 <a href="http://github.com/jimbojsb/docker-traefik-local-dev">https://github.com/jimbojsb/docker-traefik-local-dev</a></p>
 <h3 id="background">Background</h3>
 <h3 id="what-is-traefik">What is Traefik</h3>
+<p>Traefik is a reverse proxy.</p>
 <h3 id="this-seems-more-complicated-than-doing-nothing">This seems more complicated than doing nothing&hellip;</h3>
 <h3 id="step-1-get-a-real-domain-name-and-host-it-in-public-dns">Step 1: Get a real domain name, and host it in public DNS</h3>
+<p>In order to get &ldquo;real&rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of <code>.dev</code> domains from Google&rsquo;s <a href="https://get.dev">get.dev</a>, my recommendation would be to buy one of these. There&rsquo;s also no reason you can&rsquo;t use a subdomain of an existing public domain name that you already own.</p>
+<p>My perferred hosting provider for small personal projects is <a href="https://www.digitalocean.com">Digital Ocean</a>. For our purposes here, they are specifically nice because unlike AWS/Route53, they don&rsquo;t charge for hosting a domain in their DNS system. The rest of this article assumes you&rsquo;re using Digital Ocean&rsquo;s DNS, but other providers that are known to work with the Traefik certificate resolver are listed <a href="https://docs.traefik.io/https/acme/#providers">here</a>. If for some reason Digital Ocean doesn&rsquo;t work for you, I think <a href="https://cloudflare.com">Cloudflare</a> would be my second choice.</p>
+<p>The other upside of using a real public domain for this setup is that unless you need to work entirely offline (something that for me personally has become so rare that it&rsquo;s not worth worrying about), you don&rsquo;t need to run any sort of local DNS resolver like DNSMasq, as you might find recommended in various tutorial that are similar to this.</p>
+<p>Once you have a domain registered and properly set up with nameservers (again, in my case, this is going to be <code>ns1.digitalocean.com</code> and <code>ns2.digitalocean.com</code>), we need to create some <code>A</code> records. For my setup, I point <em>everything</em> to <code>127.0.0.1</code>, as I&rsquo;m only going to be using this domain for a singular purpose. By pointing it all to <code>127.0.0.1</code>, any time we use that domain or a subdomain, it&rsquo;s expected to resolve right back to your local machine, where you&rsquo;ll be running Docker and Traefik.</p>
+<p>Here&rsquo;s an example of what my setup in Digital Ocean looks like for <code>joshbutts.dev</code>:</p>
+<p><img src="https://joshbutts.com/images/posts/digitalocean-dns-local.png" alt="Digital Ocean local resolution DNS example"></p>
+<p>Notice the use of the wildcard to catch all subdomains. This means I never have to touch this again when I want to add more projects to this system locally. Note, most properly behaving DNS providers will resolve actually specified domains before wildcards, so if you want to have some other subdomains manually specified for some reason, you can still use a wildcard as the &ldquo;catch all&rdquo;.</p>
 <h3 id="step-2-make-a-new-project--git-repo">Step 2: Make a new project / Git repo</h3>
+<p>While it&rsquo;s certainly possible to apply these techniques to a single already existing project, the intention is that you&rsquo;re creating a new repo to store files and configuration for this system, which would sit above and outside any specific app that is connected to it. I like to use the top-level domain that I bought as the name of the project.</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">[~/projects]$ mkdir joshbutts.dev
+[~/projects]$ cd joshbutts.dev
+[~/projects/joshbutts.dev]$ git init
+[~/projects/joshbutts.dev (master)]$
+</code></pre></div><h3 id="step-3-set-up-a-new-docker-composeyml-file">Step 3: Set up a new docker-compose.yml file</h3>
+<p>We&rsquo;re going to use Docker Compose in this new repo to spin up Traefik and an overlay network for our other apps to attach to. Below is the entire contents of the file, followed by explanations of what each part achieves.</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+<span style="color:#fff;font-weight:bold">version</span>: <span style="color:#0ff;font-weight:bold">&#34;3.7&#34;</span>
+<span style="color:#fff;font-weight:bold">services</span>:
+  <span style="color:#fff;font-weight:bold">traefik</span>:
+    <span style="color:#fff;font-weight:bold">container_name</span>: joshbutts.dev
+    <span style="color:#fff;font-weight:bold">restart</span>: always
+    <span style="color:#fff;font-weight:bold">image</span>: traefik
+    <span style="color:#fff;font-weight:bold">networks</span>:
+      - joshbutts.dev
+    <span style="color:#fff;font-weight:bold">ports</span>:
+      - <span style="color:#ff0;font-weight:bold">80</span>:<span style="color:#ff0;font-weight:bold">80</span>
+      - <span style="color:#ff0;font-weight:bold">443</span>:<span style="color:#ff0;font-weight:bold">443</span>
+      - <span style="color:#ff0;font-weight:bold">8080</span>:<span style="color:#ff0;font-weight:bold">8080</span>
+    <span style="color:#fff;font-weight:bold">volumes</span>:
+      - <span style="color:#0ff;font-weight:bold">&#34;/var/run/docker.sock:/var/run/docker.sock:ro&#34;</span>
+      - <span style="color:#0ff;font-weight:bold">&#34;./traefik:/etc/traefik:ro&#34;</span>
+<span style="color:#fff;font-weight:bold">networks</span>:
+  <span style="color:#fff;font-weight:bold">joshbutts.dev</span>:
+    <span style="color:#fff;font-weight:bold">name</span>: joshbutts.dev
+</code></pre></div><p>As you can see, pretty short and simple but there&rsquo;s a decent amount of magic going on here that we need to discuss. We have just one service named <code>traefik</code> defined in this file. The name you choose for this service has no impact on anything.</p>
+<h6 id="image">image</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">image</span>: traefik
+</code></pre></div><p>The Docker image we want to use comes off Dockerhub&rsquo;s public library of &ldquo;blue ribbon&rdquo; packages, so we can just reference it by the short name <code>traefik</code>. This also implies that you&rsquo;ll always be getting the latest version of the image. If that makes you nervous, you could specify someting more specific like <code>traefik:2.1</code>, which was the latest version as of this writing.</p>
+<h6 id="restart">restart</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">restart</span>: always
+</code></pre></div><p>This is up to your personal preference, but I like to add <code>restart: always</code> to this service because that way I don&rsquo;t have to remember to start or stop this when I go to start working on something. When idle Traefik consumes basically zero CPU and only a few MB of RAM.</p>
+<h6 id="container_name">container_name</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">container_name</span>: joshbutts.dev
+</code></pre></div><p>Docker Compose will automatically name the containers under its control by combining the directory name of the project with the service name and a numeric suffix. This is fine, but also given that we know there will only ever be a single one of these, and I&rsquo;m feeling particularly controlling, I&rsquo;m overriding the name that will be generated for this container. Totally optional.</p>
+<h6 id="ports">ports</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">ports</span>:
+  - <span style="color:#ff0;font-weight:bold">80</span>:<span style="color:#ff0;font-weight:bold">80</span>
+  - <span style="color:#ff0;font-weight:bold">443</span>:<span style="color:#ff0;font-weight:bold">443</span>
+  - <span style="color:#ff0;font-weight:bold">8080</span>:<span style="color:#ff0;font-weight:bold">8080</span>
+</code></pre></div><p>This setup means Traefik will own ports <code>80</code>, <code>443</code> and <code>8080</code> on your local system. <code>80</code> and <code>443</code> will be used to host your HTTP applications, and for the purposes of this example, we&rsquo;re primarily concerned with 443 because we&rsquo;re going to set up SSL/TLS. <code>8080</code> is used for serve the Traefik API and Dashboard. <code>8080</code> is optional, but it&rsquo;s definitely useful especially when you&rsquo;re just getting started so you can see that your containers are all connected up correctly.</p>
+<h6 id="volumes">volumes</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">volumes</span>:
+  - <span style="color:#0ff;font-weight:bold">&#34;/var/run/docker.sock:/var/run/docker.sock:ro&#34;</span>
+  - <span style="color:#0ff;font-weight:bold">&#34;./traefik:/etc/traefik:ro&#34;</span>
+</code></pre></div><p>We need to mount some volumes here in order for Traefik to be able to function correctly. The first is the Docker socket. Traefik will use this to listen to events on the Docker API so that it can automagically register new services when you start them via Docker. The second one is mounting a local directory we&rsquo;ll create in this project into the place where Traefik expects its configuration files to live by default. We mount both of these with the <code>:ro</code> flag because Traefik has no need to change or write to any of these files.</p>
+<h6 id="networks">networks</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">networks</span>:
+  <span style="color:#fff;font-weight:bold">joshbutts.dev</span>:
+    <span style="color:#fff;font-weight:bold">name</span>: joshbutts.dev
+</code></pre></div><p>Docker Compose will automatically (in recent versions) create an overlay network to connect your containers to. By default that network is named similarly to how containers are named, by using the directory and service names. Here we are overriding that naming, and then we also manually specify that overridden name in the service definition section as well. This override is optional but I strongly recommend you do it, because you&rsquo;ll need to specify this name in the external projects that you want to proxy with Traefik, and it&rsquo;s easier to remember a clean name (I&rsquo;m using <code>joshbutts.dev</code> as the name so it matches domain name and the service name I specified) than it is to either go look up or try to remember how exactly Docker Compose named the network.</p>
 <h3 id="step-3-set-up-the-basics-of-traefik">Step 3: Set up the basics of Traefik</h3>
 <h3 id="step-4-set-up-lets-encrypt-for-ssl">Step 4: Set up Let&rsquo;s Encrypt for SSL</h3>
 <h3 id="step-5-connect-an-actual-project-to-a-subdomain">Step 5: Connect an actual project to a subdomain</h3>
