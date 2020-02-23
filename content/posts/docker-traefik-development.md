@@ -22,6 +22,12 @@ Traefik is a reverse proxy.
 
 ### Step 2: Make a new project / Git repo
 
+While it's certainly possible to apply these techniques to a single already existing project, the intention is that you're creating a new repo to store files and configuration for this system, which would sit above and outside any specific app that is connected to it. I like to use the top-level domain that I bought as the name of the project.
+
+    [~/projects]$ mkdir joshbutts.dev
+    [~/projects]$ cd joshbutts.dev
+    [~/projects]$ git init
+
 ### Step 3: Set up the basics of Traefik
 
 ### Step 4: Set up Let's Encrypt for SSL
