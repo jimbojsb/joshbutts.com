@@ -1,0 +1,39 @@
+baseURL = "https://joshbutts.com/"
+languageCode = "en-us"
+title = "Josh Butts"
+theme = "hugo-coder"
+publishDir = "docs"
+
+
+
+[params]
+    author = "Josh Butts"
+    description = "Personal website of Josh Butts"
+    keywords = "blog,developer,personal"
+    info = "Technology Leader & Digital Media Executive"
+    avatarurl = "/images/headshot-480.jpg"
+    hideCredits = true
+
+[[params.social]]
+    name = "Github"
+    icon = "fab fa-github"
+    weight = 1
+    url = "https://github.com/jimbojsb/"
+
+[[params.social]]
+    name = "Twitter"
+    icon = "fab fa-twitter"
+    weight = 1
+    url = "https://twitter.com/jimbojsb/"
+
+[[params.social]]
+    name = "LinkedIn"
+    icon = "fab fa-linkedin"
+    weight = 1
+    url = "https://www.linkedin.com/in/joshbutts"
+
+[[params.social]]
+    name = "Instagram"
+    icon = "fab fa-instagram"
+    weight = 1
+    url = "https://www.instagram.com/jimbojsb/"
