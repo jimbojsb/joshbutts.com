@@ -1,17 +1,20 @@
-+++ 
-date = "2020-02-22"
-title = "Using Traefik 2 and Docker for local development with multiple projects"
-slug = "traefik-docker-local-dev" 
-tags = ['docker', 'traefik']
 +++
+date = 2020-02-22T00:00:00Z
+slug = "traefik-docker-local-dev"
+tags = ["docker", "traefik"]
+title = "Using Traefik 2 and Docker for local development with multiple projects"
 
++++
 ### TL;DR
+
 Fine, just skip directly to the Github repo that has a complete example of how to do this:  
 [https://github.com/jimbojsb/docker-traefik-local-dev](http://github.com/jimbojsb/docker-traefik-local-dev)
 
 ### Background
 
 ### What is Traefik
+
+Traefik is a reverse proxy.
 
 ### This seems more complicated than doing nothing...
 
@@ -25,4 +28,4 @@ Fine, just skip directly to the Github repo that has a complete example of how t
 
 ### Step 5: Connect an actual project to a subdomain
 
-### Wrap Up 
+### Wrap Up
