@@ -3,15 +3,33 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://joshbutts.com/categories/</loc>
+    <loc>https://joshbutts.com/tags/docker/</loc>
+    <lastmod>2020-02-22T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://joshbutts.com/</loc>
+    <lastmod>2020-02-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://joshbutts.com/posts/</loc>
+    <lastmod>2020-02-22T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://joshbutts.com/tags/</loc>
+    <lastmod>2020-02-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://joshbutts.com/tags/traefik/</loc>
+    <lastmod>2020-02-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://joshbutts.com/posts/traefik-docker-local-dev/</loc>
+    <lastmod>2020-02-22T00:00:00+00:00</lastmod>
   </url>
   
 </urlset>
