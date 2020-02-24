@@ -10,17 +10,15 @@
     <meta name="keywords" content="blog,developer,personal">
 
     <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Using Traefik 2 and Docker for local development with multiple projects"/>
+<meta name="twitter:title" content="Using Traefik, Docker and Let&#39;s Encrypt to manage multiple local development projects"/>
 <meta name="twitter:description" content="TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
-https://github.com/jimbojsb/docker-traefik-local-dev
-Background What is Traefik Traefik is a reverse proxy.
-This seems more complicated than doing nothing&hellip; Step 1: Get a real domain name, and host it in public DNS In order to get &ldquo;real&rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of .dev domains from Google&rsquo;s get."/>
+https://github.com/jimbojsb/traefik-docker-local-dev
+Background This is something multiple people have asked me how to achieve, so I finally sat down to write this up. This guide will show you how to take an existing collection of web applications that listen on port 80 for local dev and give them a fully working SSL setup."/>
 
-    <meta property="og:title" content="Using Traefik 2 and Docker for local development with multiple projects" />
+    <meta property="og:title" content="Using Traefik, Docker and Let&#39;s Encrypt to manage multiple local development projects" />
 <meta property="og:description" content="TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
-https://github.com/jimbojsb/docker-traefik-local-dev
-Background What is Traefik Traefik is a reverse proxy.
-This seems more complicated than doing nothing&hellip; Step 1: Get a real domain name, and host it in public DNS In order to get &ldquo;real&rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of .dev domains from Google&rsquo;s get." />
+https://github.com/jimbojsb/traefik-docker-local-dev
+Background This is something multiple people have asked me how to achieve, so I finally sat down to write this up. This guide will show you how to take an existing collection of web applications that listen on port 80 for local dev and give them a fully working SSL setup." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://joshbutts.com/posts/traefik-docker-local-dev/" />
 <meta property="article:published_time" content="2020-02-22T00:00:00+00:00" />
@@ -31,7 +29,7 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
       <base href="https://joshbutts.com/posts/traefik-docker-local-dev/">
     
     <title>
-  Using Traefik 2 and Docker for local development with multiple projects · Josh Butts | joshbutts.com
+  Using Traefik, Docker and Let&#39;s Encrypt to manage multiple local development projects · Josh Butts | joshbutts.com
 </title>
 
     
@@ -97,7 +95,7 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
     <article>
       <header>
         <div class="post-title">
-          <h1 class="title">Using Traefik 2 and Docker for local development with multiple projects</h1>
+          <h1 class="title">Using Traefik, Docker and Let&#39;s Encrypt to manage multiple local development projects</h1>
         </div>
         <div class="post-meta">
           <div class="date">
@@ -109,7 +107,7 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
             </span>
             <span class="reading-time">
               <i class="fas fa-clock"></i>
-              6-minute read
+              16-minute read
             </span>
           </div>
           
@@ -126,11 +124,14 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
         
         <h3 id="tldr">TL;DR</h3>
 <p>Fine, just skip directly to the Github repo that has a complete example of how to do this:<br>
-<a href="http://github.com/jimbojsb/docker-traefik-local-dev">https://github.com/jimbojsb/docker-traefik-local-dev</a></p>
+<a href="https://github.com/jimbojsb/traefik-docker-local-dev">https://github.com/jimbojsb/traefik-docker-local-dev</a></p>
 <h3 id="background">Background</h3>
+<p>This is something multiple people have asked me how to achieve, so I finally sat down to write this up. This guide will show you how to take an existing collection of web applications that listen on port 80 for local dev and give them a fully working SSL setup. It will also allow you to not have to manually map high-numbered ports for them, and to be able to run all of them at the same time, rather than having to share port 80, or 8080, or keep some sort of external list of which app is using which port.</p>
+<p>This assumes you already have a fully functional Docker and Docker Compose setup, and are reasonable well versed in using them, as I&rsquo;m not attempting to explain how any of the Docker stuff actually works, only how to use it to build a Traefik environment. It also mostly assumes you understand the mechanics of a reverse proxy well enough to grok the plumbing of all of this once it&rsquo;s laid out for you. I would suggest that this is not a guide for beginners.</p>
 <h3 id="what-is-traefik">What is Traefik</h3>
-<p>Traefik is a reverse proxy.</p>
+<p><a href="https://docs.traefik.io/">Traefik</a> is an extremely powerful reverse proxy that&rsquo;s written in Go. It&rsquo;s very mature and is designed to be used in production environments, but it&rsquo;s also easy to do really cool things with it on your local machine, as we&rsquo;re about to see.</p>
 <h3 id="this-seems-more-complicated-than-doing-nothing">This seems more complicated than doing nothing&hellip;</h3>
+<p>It definitely is. However, it&rsquo;s fun to work on, and makes local dev a bit cleaner. It also tests your app configurations more as if they were in production, as with production Docker setups, Kubernetes ingresses, and edge-side TLS termination, it&rsquo;s more an more likely that your app will be running behind some sort of reverse proxy in production, so why not mirror that locally and get some benefits out of it at the same time?</p>
 <h3 id="step-1-get-a-real-domain-name-and-host-it-in-public-dns">Step 1: Get a real domain name, and host it in public DNS</h3>
 <p>In order to get &ldquo;real&rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of <code>.dev</code> domains from Google&rsquo;s <a href="https://get.dev">get.dev</a>, my recommendation would be to buy one of these. There&rsquo;s also no reason you can&rsquo;t use a subdomain of an existing public domain name that you already own.</p>
 <p>My perferred hosting provider for small personal projects is <a href="https://www.digitalocean.com">Digital Ocean</a>. For our purposes here, they are specifically nice because unlike AWS/Route53, they don&rsquo;t charge for hosting a domain in their DNS system. The rest of this article assumes you&rsquo;re using Digital Ocean&rsquo;s DNS, but other providers that are known to work with the Traefik certificate resolver are listed <a href="https://docs.traefik.io/https/acme/#providers">here</a>. If for some reason Digital Ocean doesn&rsquo;t work for you, I think <a href="https://cloudflare.com">Cloudflare</a> would be my second choice.</p>
@@ -141,21 +142,20 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
 <p>Notice the use of the wildcard to catch all subdomains. This means I never have to touch this again when I want to add more projects to this system locally. Note, most properly behaving DNS providers will resolve actually specified domains before wildcards, so if you want to have some other subdomains manually specified for some reason, you can still use a wildcard as the &ldquo;catch all&rdquo;.</p>
 <h3 id="step-2-make-a-new-project--git-repo">Step 2: Make a new project / Git repo</h3>
 <p>While it&rsquo;s certainly possible to apply these techniques to a single already existing project, the intention is that you&rsquo;re creating a new repo to store files and configuration for this system, which would sit above and outside any specific app that is connected to it. I like to use the top-level domain that I bought as the name of the project.</p>
-<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">[~/projects]$ mkdir joshbutts.dev
-[~/projects]$ cd joshbutts.dev
-[~/projects/joshbutts.dev]$ git init
-[~/projects/joshbutts.dev (master)]$
-</code></pre></div><h3 id="step-3-set-up-a-new-docker-composeyml-file">Step 3: Set up a new docker-compose.yml file</h3>
-<p>We&rsquo;re going to use Docker Compose in this new repo to spin up Traefik and an overlay network for our other apps to attach to. Below is the entire contents of the file, followed by explanations of what each part achieves.</p>
+<p><em>NOTE: If you&rsquo;re going to push this repo to Github, I&rsquo;d highly recommend you make it a private repo. I&rsquo;m going to advocate that you store an API as an environment variable in your <code>docker-compose.yml</code> file, and you don&rsquo;t want to be exposing that to the world.</em></p>
+<h3 id="step-3-set-up-a-new-docker-composeyml-file">Step 3: Set up a new docker-compose.yml file</h3>
+<p>We&rsquo;re going to use Docker Compose in this new repo to spin up Traefik and an overlay network for our other apps to attach to. Below is the entire contents of the file, followed by explanations of what each part achieves. I&rsquo;ve marked the lines I&rsquo;d expect you&rsquo;d be changing out with the name of your actual domain name.</p>
 <div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
 <span style="color:#fff;font-weight:bold">version</span>: <span style="color:#0ff;font-weight:bold">&#34;3.7&#34;</span>
 <span style="color:#fff;font-weight:bold">services</span>:
   <span style="color:#fff;font-weight:bold">traefik</span>:
-    <span style="color:#fff;font-weight:bold">container_name</span>: joshbutts.dev
+    <span style="color:#fff;font-weight:bold">container_name</span>: mydomain.dev <span style="color:#007f7f">#change this line</span>
+    <span style="color:#fff;font-weight:bold">environment</span>:
+      <span style="color:#fff;font-weight:bold">DO_AUTH_TOKEN</span>: xxxxxxx <span style="color:#007f7f">#change this line</span>
     <span style="color:#fff;font-weight:bold">restart</span>: always
     <span style="color:#fff;font-weight:bold">image</span>: traefik
     <span style="color:#fff;font-weight:bold">networks</span>:
-      - joshbutts.dev
+      - mydomain.dev <span style="color:#007f7f">#change this line</span>
     <span style="color:#fff;font-weight:bold">ports</span>:
       - <span style="color:#ff0;font-weight:bold">80</span>:<span style="color:#ff0;font-weight:bold">80</span>
       - <span style="color:#ff0;font-weight:bold">443</span>:<span style="color:#ff0;font-weight:bold">443</span>
@@ -164,12 +164,17 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
       - <span style="color:#0ff;font-weight:bold">&#34;/var/run/docker.sock:/var/run/docker.sock:ro&#34;</span>
       - <span style="color:#0ff;font-weight:bold">&#34;./traefik:/etc/traefik:ro&#34;</span>
 <span style="color:#fff;font-weight:bold">networks</span>:
-  <span style="color:#fff;font-weight:bold">joshbutts.dev</span>:
-    <span style="color:#fff;font-weight:bold">name</span>: joshbutts.dev
+  <span style="color:#fff;font-weight:bold">mydomain.dev</span>: <span style="color:#007f7f">#change this line</span>
+    <span style="color:#fff;font-weight:bold">name</span>: mydomain.dev <span style="color:#007f7f">#change this line</span>
 </code></pre></div><p>As you can see, pretty short and simple but there&rsquo;s a decent amount of magic going on here that we need to discuss. We have just one service named <code>traefik</code> defined in this file. The name you choose for this service has no impact on anything.</p>
+<p>Now, lets review what these various directives are actually doing:</p>
 <h6 id="image">image</h6>
 <div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">image</span>: traefik
 </code></pre></div><p>The Docker image we want to use comes off Dockerhub&rsquo;s public library of &ldquo;blue ribbon&rdquo; packages, so we can just reference it by the short name <code>traefik</code>. This also implies that you&rsquo;ll always be getting the latest version of the image. If that makes you nervous, you could specify someting more specific like <code>traefik:2.1</code>, which was the latest version as of this writing.</p>
+<h6 id="environment">environment</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">environment</span>:
+  <span style="color:#fff;font-weight:bold">DO_AUTH_TOKEN</span>: xxxxxxx
+</code></pre></div><p>Traefik&rsquo;s DNS Challenge providers make use of environment variables to provide the API keys for DNS record management. We&rsquo;ll discuss this more later, but for Digital Ocean, you&rsquo;d generate an &ldquo;Personal Access Token&rdquo; API key in your account dashboard and use that as the value for <code>DO_AUTH_TOKEN</code>. For other DNS providers, the values here may be different. Documentation for this is available <a href="https://docs.traefik.io/https/acme/#providers">here</a>.</p>
 <h6 id="restart">restart</h6>
 <div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml"><span style="color:#fff;font-weight:bold">restart</span>: always
 </code></pre></div><p>This is up to your personal preference, but I like to add <code>restart: always</code> to this service because that way I don&rsquo;t have to remember to start or stop this when I go to start working on something. When idle Traefik consumes basically zero CPU and only a few MB of RAM.</p>
@@ -192,10 +197,140 @@ This seems more complicated than doing nothing&hellip; Step 1: Get a real domain
   <span style="color:#fff;font-weight:bold">joshbutts.dev</span>:
     <span style="color:#fff;font-weight:bold">name</span>: joshbutts.dev
 </code></pre></div><p>Docker Compose will automatically (in recent versions) create an overlay network to connect your containers to. By default that network is named similarly to how containers are named, by using the directory and service names. Here we are overriding that naming, and then we also manually specify that overridden name in the service definition section as well. This override is optional but I strongly recommend you do it, because you&rsquo;ll need to specify this name in the external projects that you want to proxy with Traefik, and it&rsquo;s easier to remember a clean name (I&rsquo;m using <code>joshbutts.dev</code> as the name so it matches domain name and the service name I specified) than it is to either go look up or try to remember how exactly Docker Compose named the network.</p>
-<h3 id="step-3-set-up-the-basics-of-traefik">Step 3: Set up the basics of Traefik</h3>
-<h3 id="step-4-set-up-lets-encrypt-for-ssl">Step 4: Set up Let&rsquo;s Encrypt for SSL</h3>
+<h3 id="step-3-set-up-traefik">Step 3: Set up Traefik</h3>
+<p>We&rsquo;re going to need some configuration files for Traefik. Nothing too complicated, and in many cases, you can actually configure traefik entirely from your docker-compose.yml by overriding the command for its container, but I find that a bit harder to read and manage. Also, should you ever want to expand on this, you may need to configure an option that&rsquo;s not really possible on the command line, so I think going the config file route is ideal.</p>
+<p>To get started, we need to make a <code>traefik/</code> subfolder in our project. This will be referenced by the volume mapping we created in the <code>docker-compose.yml</code>. Inside <code>traefik/</code> we need to create the master Traefik config file, called <code>traefik.toml</code> I&rsquo;ve pasted the entire contents below, and marked the lines where you&rsquo;d want to change out my example values for your own.</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[entryPoints]
+  [entryPoints.http]
+    address = <span style="color:#0ff;font-weight:bold">&#34;:80&#34;</span>
+  [entryPoints.https]
+    address = <span style="color:#0ff;font-weight:bold">&#34;:443&#34;</span>
+[providers]
+  [providers.docker]
+    exposedByDefault = <span style="color:#fff;font-weight:bold">false</span>
+    network = <span style="color:#0ff;font-weight:bold">&#34;mydomain.dev&#34;</span> <span style="color:#007f7f">#change this line</span>
+[api]
+  dashboard = <span style="color:#fff;font-weight:bold">true</span>
+  insecure = <span style="color:#fff;font-weight:bold">true</span>
+[certificatesResolvers.default.acme]
+  email = <span style="color:#0ff;font-weight:bold">&#34;me@mydomain.com&#34;</span> <span style="color:#007f7f">#change this line</span>
+  storage = <span style="color:#0ff;font-weight:bold">&#34;acme.json&#34;</span>
+  [certificatesResolvers.default.acme.dnsChallenge]
+    provider = <span style="color:#0ff;font-weight:bold">&#34;digitalocean&#34;</span>
+    delayBeforeCheck = <span style="color:#ff0;font-weight:bold">0</span>
+</code></pre></div><p>Now, as with the <code>docker-compose.yml</code>, lets discuss briefly what all this stuff in <code>traefik.toml</code> does.</p>
+<h6 id="entrypoints">[entrypoints]</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[entryPoints]
+  [entryPoints.http]
+    address = <span style="color:#0ff;font-weight:bold">&#34;:80&#34;</span>
+  [entryPoints.https]
+    address = <span style="color:#0ff;font-weight:bold">&#34;:443&#34;</span>
+</code></pre></div><p>The entrypoints sections describes effectively, what ports should Traefik listen on to route traffic. We&rsquo;ve got the standard HTTP and HTTPS ports here. The leading colon implies &ldquo;listen on all network interfaces&rdquo;. The <code>.http</code> and <code>.https</code> suffixes on the <code>entrypoints</code> directive are user-supplied names. You could change those to say for example, <code>web</code>, and <code>websecure</code>, but why would you? If you changed those, you&rsquo;d also need to change how you reference them in step 5 later on.</p>
+<h6 id="providers">[providers]</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[providers]
+  [providers.docker]
+    exposedByDefault = <span style="color:#fff;font-weight:bold">false</span>
+    network = <span style="color:#0ff;font-weight:bold">&#34;mydomain.dev&#34;</span> <span style="color:#007f7f">#change this line</span>
+</code></pre></div><p>The providers section tells Traefik where to look for backend services that it should route traffic to. The <code>docker</code> provider means that Traefik will look for containers using the Docker API and connect them automatically if they have the appropriate labels on them. The value of <code>network</code> here needs to match whatever you chose for the name of the network in your <code>docker-compose.yml</code> file. <code>exposedByDefault</code> decides whether Traefik should attempt to wire up every Docker container it can find, or alternatively, if the Traefik linkage should be an &ldquo;opt in&rdquo; process. Given that it&rsquo;s so easy, as we&rsquo;ll see, to opt in, I always leave this set to <code>false</code>.</p>
+<h6 id="api">[api]</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[api]
+  dashboard = <span style="color:#fff;font-weight:bold">true</span>
+  insecure = <span style="color:#fff;font-weight:bold">true</span>
+</code></pre></div><p>Traefik has a full REST API (documented <a href="https://docs.traefik.io/operations/api/#endpoints">here</a>). It&rsquo;s required that you enable the API in order to use the dashboard. As long as you&rsquo;re not trying to use this guide for anything other than local development, these settings are safe and easy. <code>insecure=true</code> tells Traefik to not bother with setting up HTTPS for the backend dashboard. By default, enabling these options will make the dashboard available at <code>http://localhost:8080</code></p>
+<h6 id="certificateresolvers">[certificateResolvers]</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-toml" data-lang="toml">[certificatesResolvers.default.acme]
+  email = <span style="color:#0ff;font-weight:bold">&#34;me@mydomain.com&#34;</span> <span style="color:#007f7f">#change this line</span>
+  storage = <span style="color:#0ff;font-weight:bold">&#34;acme.json&#34;</span>
+  [certificatesResolvers.default.acme.dnsChallenge]
+    provider = <span style="color:#0ff;font-weight:bold">&#34;digitalocean&#34;</span>
+    delayBeforeCheck = <span style="color:#ff0;font-weight:bold">0</span>
+</code></pre></div><p>This section is where we&rsquo;re going to tell Traefik to use Lets Encrypt to generate SSL certificates for us. Where you see <code>default</code> in this section, that is a user-supplied name. It could be called anything, but we&rsquo;ll need to reference this name later in step 5. If you&rsquo;re not doing any other configuration beyond what I&rsquo;m recommending here, <code>default</code> is as good a word as any. <code>acme</code> is the protocol by which Lets Encrypt certificates are issued. for <code>storage=&quot;acme.json&quot;</code>, this just tells Traefik where to hold on to the data it gets from the Lets Encrypt API. No reason to mess with that one. All Lets Encrypt certificates require that you submit an email address, so change the <code>email</code> value to be your personal email address.</p>
+<p>We&rsquo;re going to tell Traefik to use DNS Challenge as it&rsquo;s method to issue the certificate. In order to do this, Traefik needs to have API access to whomever your DNS provider is (I&rsquo;m using Digital Ocean) so that it can create a TXT record on your behalf to verify your ownership of the domain. <code>delaybeforecheck = 0</code> tells Traefik that it does not need to pause after creating the DNS record before attempting to validate the certificate. If you&rsquo;re not using Digital Ocean, your options here will look different, and you&rsquo;ll need to reference the Traefik docs <a href="https://docs.traefik.io/https/acme/#providers">here</a></p>
+<h3 id="step-5-start-traefik">Step 5: Start Traefik</h3>
+<p>If you&rsquo;ve done everything right, we&rsquo;re ready to start Traefik using Docker Compose. This is as simple as typing <code>docker-compose up -d</code> at the top level of your project folder. You should see output that looks like this:</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fallback" data-lang="fallback">$ docker-compose up -d
+
+Creating network &#34;joshbutts.dev&#34; with the default driver
+Pulling traefik (traefik:)...
+latest: Pulling from library/traefik
+c9b1b535fdd9: Pull complete
+c141e361698e: Pull complete
+79168d1112b9: Pull complete
+6d494c7ddd01: Pull complete
+Digest: sha256:0b55d2ea61610454d36c0309c8b63ef5ca3d0e03fd075bbd888dbb52271a7500
+Status: Downloaded newer image for traefik:latest
+Creating joshbutts.dev ... done
+</code></pre></div><p>If that&rsquo;s gone well, you can then check your dashboard at <code>http://localhost:8080</code>. It should look something like this:</p>
+<p><img src="https://joshbutts.com/images/posts/traefik-dashboard.png" alt="Traefik Dashboard Screenshot"></p>
+<p>If everything&rsquo;s looking good, now would be a good time to commit your changes in this repo. For the scope of this guide, nothing more should be needed, and this should &ldquo;just work&rdquo; going forward. You can always come back and check the Traefik dashboard to see the status of things in the future.</p>
 <h3 id="step-5-connect-an-actual-project-to-a-subdomain">Step 5: Connect an actual project to a subdomain</h3>
+<p>Assuming you&rsquo;ve already got some projects that you want to use, and those projects are already up and running with Docker Compose, we now just need to make some minor adjustments to the <code>docker-compose.yml</code> files for those projects to connect them up to our Traefik.</p>
+<p>Here&rsquo;s an example <code>docker-compose.yml</code> from a CraftCMS project I&rsquo;m working on, partially redacted for brevity. This is <em>before</em> we&rsquo;ve made any changes.</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+<span style="color:#fff;font-weight:bold">version</span>: <span style="color:#0ff;font-weight:bold">&#34;3.7&#34;</span>
+<span style="color:#fff;font-weight:bold">services</span>:
+  <span style="color:#fff;font-weight:bold">web</span>:
+    <span style="color:#fff;font-weight:bold">image</span>: jimbojsb/craftcms
+    <span style="color:#fff;font-weight:bold">ports</span>:
+      - <span style="color:#ff0;font-weight:bold">8000</span>:<span style="color:#ff0;font-weight:bold">80</span>
+    <span style="color:#fff;font-weight:bold">environment</span>:
+      <span style="color:#fff;font-weight:bold">ENVIRONMENT</span>: dev
+      <span style="color:#007f7f"># redacted/shortened here</span>
+    <span style="color:#fff;font-weight:bold">volumes</span>:
+      - .:/app:cached
+    <span style="color:#fff;font-weight:bold">depends_on</span>:
+      - mysql
+  <span style="color:#fff;font-weight:bold">mysql</span>:
+    <span style="color:#fff;font-weight:bold">image</span>: mysql:<span style="color:#ff0;font-weight:bold">5.7</span>
+     <span style="color:#007f7f"># redacted/shortened here</span>
+
+</code></pre></div><p>Now we&rsquo;ll need to add a few things to get this hooked up. Step one will be determining the subdomain we want to use. We&rsquo;ll use <code>myapp</code> as an example, but my convention would be that this is probably the name name as the directory this project lives in, e.g. the name of the project. This would mean that this app will be accessible in your web browser at <code>https://myapp.mydomain.dev</code>.</p>
+<p><em>Note: While it&rsquo;s not technically a problem, I&rsquo;d recommend always sticking with one level of subdomain. If you need some sort of additional namespacing, use dashes. For example: <code>myapp-web</code> and <code>myapp-cms</code>.</em></p>
+<p>Here&rsquo;s the <code>docker-compose.yml</code> for our project with the changes applied:</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">---
+<span style="color:#fff;font-weight:bold">version</span>: <span style="color:#0ff;font-weight:bold">&#34;3.7&#34;</span>
+<span style="color:#fff;font-weight:bold">services</span>:
+  <span style="color:#fff;font-weight:bold">web</span>:
+    <span style="color:#fff;font-weight:bold">image</span>: jimbojsb/craftcms
+    <span style="color:#fff;font-weight:bold">environment</span>:
+      <span style="color:#fff;font-weight:bold">ENVIRONMENT</span>: dev
+      <span style="color:#007f7f"># redacted/shortened here</span>
+    <span style="color:#fff;font-weight:bold">labels</span>:
+      - traefik.enable=<span style="color:#fff;font-weight:bold">true</span>
+      - traefik.http.routers.myapp.rule=Host(`myapp.mydomain.dev`)
+      - traefik.http.routers.myapp.entrypoints=https
+      - traefik.http.routers.myapp.tls=<span style="color:#fff;font-weight:bold">true</span>
+      - traefik.http.routers.myapp.tls.certresolver=default
+    <span style="color:#fff;font-weight:bold">networks</span>:
+      - mydomain.dev
+      - default
+    <span style="color:#fff;font-weight:bold">volumes</span>:
+      - .:/app:cached
+    <span style="color:#fff;font-weight:bold">depends_on</span>:
+      - mysql
+  <span style="color:#fff;font-weight:bold">mysql</span>:
+    <span style="color:#fff;font-weight:bold">image</span>: mysql:<span style="color:#ff0;font-weight:bold">5.7</span>
+      <span style="color:#007f7f"># redacted/shortened here</span>
+<span style="color:#fff;font-weight:bold">networks</span>:
+  <span style="color:#fff;font-weight:bold">mydomain.dev</span>:
+    <span style="color:#fff;font-weight:bold">external</span>: <span style="color:#fff;font-weight:bold">true</span>
+
+</code></pre></div><p>Notice at the bottom of the file, we&rsquo;ve added a <code>networks</code> section. We&rsquo;re defining a network that&rsquo;s named the same as the one we defined in our Traefik repo, and telling Docker Compose that it&rsquo;s external to this project. Once we do this, we can connect our containers to it, so that Traefik can make connections to them.</p>
+<p>Because we need to specifically tell Docker Compose to give our <code>web</code> container access to the <code>mydomain.dev</code> overlay network, we need to add a <code>networks</code> block into the <code>web</code> service definition, and list it there as well. We also list the <code>default</code> network, which means the <code>web</code> container can talk on the network that Docker Compose creates for each project, as that&rsquo;s what network our <code>mysql</code> container will be placed on. There are obviously lots of ways to arrage this, but I found this to be the simplest to model and requiring the least amount of duplication of definition within a <code>docker-compose.yml</code> file.</p>
+<p>Another change we&rsquo;ve made here is telling Docker Compose that our <code>web</code> service should no longer expose its internal port <code>80</code> to external port <code>8000</code>. While it&rsquo;s fine to leave this, Traefik is going to take care of routing all our web traffic, so there&rsquo;s no reason to bother exposing any web ports in this project anymore. Those are surfaced exclusively by the Traefik container now.</p>
+<p>Lastly and most importantly, we&rsquo;re adding some <code>labels</code>. The labels are what Traefik is looking for to tell it how to connect this container to it&rsquo;s router. In these labels where you see <code>routers.myapp</code>, <code>myapp</code> is a user-supplied name. You should use the name of your project here. Lets review what each label does:</p>
+<ul>
+<li><code>traefik.enable=true</code>: Tells Traefik to pay attention and hook up this container. Not required if you chose <code>exposedByDefault</code> in your <code>traefik.toml</code></li>
+<li><code>traefik.http.routers.myapp.rule=Host(`myapp.mydomain.dev`)</code>: This is the primary rule that tells Traefik how to map the subdomain you want to use to this container when you visit it in a web browser.</li>
+<li><code>traefik.http.routers.myapp.entrypoints=https</code>: Tells Traefik that this site is exposed on the entrypoint from our <code>traefik.toml</code> labeled <code>https</code>. You could also allow an app to be on <code>http</code> and <code>https</code>, but in most cases, there&rsquo;s no good reason to.</li>
+<li><code>traefik.http.routers.myapp.tls=true</code>: Tells Traefik to use TLS with this application. Note that Traefik is extremely configurable, so just because you&rsquo;re operating on port <code>443</code> does not <em>necessarily</em> mean that you&rsquo;ve decided that should be a TLS port. That flexibility is the reason this configuration seems slightly more verbose than it otherwise could be.</li>
+<li><code>traefik.http.routers.myapp.tls.certresolver=default</code>: Use the <code>certificateResolver</code> named <code>default</code> from our <code>traefik.toml</code> to figure out how to issue and serve a valid certificate. In our case, this is going to use Lets Encrypt.</li>
+</ul>
+<p>Once you&rsquo;ve applied these small changes to your <code>docker-compose.yml</code> for any project you want to use with your Traefik container, you&rsquo;d then <code>docker-compose up -d</code> that project. That will cause Traefik to pick up those changes, and you&rsquo;ll see them reflected in your Dashboard.</p>
+<p>If all has gone well, you can click &ldquo;Explore&rdquo; on the HTTP Routers section of your Traefik dashboard and see your new service listed. You&rsquo;ll also be able to navigate to your services on <code>https://myapp.mydomain.dev</code> now, and notice that it has a fully functioning SSL Certificate and all is well with the world. Here&rsquo;s a screenshot of my instance of Traefik with a project called <code>tejas</code> registered to it:</p>
+<p><img src="https://joshbutts.com/images/posts/traefik-dashboard-tejas.png" alt="Traefik Dashboard Screenshot"></p>
 <h3 id="wrap-up">Wrap Up</h3>
+<p>I hope you&rsquo;ve found this helpful. As I said at the beginning, this is definitely an <em>opinionated</em> setup, and there are a dozen other ways to achieve something similar. Feel free to take the example repo from Github and modify to to fit your own use case.</p>
 
       </div>
 

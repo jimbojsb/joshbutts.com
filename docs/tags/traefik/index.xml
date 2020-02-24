@@ -12,15 +12,14 @@
     
     
     <item>
-      <title>Using Traefik 2 and Docker for local development with multiple projects</title>
+      <title>Using Traefik, Docker and Let&#39;s Encrypt to manage multiple local development projects</title>
       <link>https://joshbutts.com/posts/traefik-docker-local-dev/</link>
       <pubDate>Sat, 22 Feb 2020 00:00:00 +0000</pubDate>
       
       <guid>https://joshbutts.com/posts/traefik-docker-local-dev/</guid>
       <description>TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
-https://github.com/jimbojsb/docker-traefik-local-dev
-Background What is Traefik Traefik is a reverse proxy.
-This seems more complicated than doing nothing&amp;hellip; Step 1: Get a real domain name, and host it in public DNS In order to get &amp;ldquo;real&amp;rdquo; SSL/TLS working, you need a real, publicly-registered-on-the-internet domain name. With the availability of .dev domains from Google&amp;rsquo;s get.</description>
+https://github.com/jimbojsb/traefik-docker-local-dev
+Background This is something multiple people have asked me how to achieve, so I finally sat down to write this up. This guide will show you how to take an existing collection of web applications that listen on port 80 for local dev and give them a fully working SSL setup.</description>
     </item>
     
   </channel>
