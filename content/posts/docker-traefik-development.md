@@ -2,7 +2,7 @@
 date = 2020-02-22T00:00:00Z
 slug = "traefik-docker-local-dev"
 tags = ["docker", "traefik"]
-title = "Using Traefik, Docker and Let's Encrypt to manage multiple local development projects"
+title = "Using Traefik, Docker, and Let's Encrypt to manage multiple local development projects"
 
 +++
 ### TL;DR
