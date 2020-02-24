@@ -19,7 +19,8 @@
       <guid>https://joshbutts.com/posts/traefik-docker-local-dev/</guid>
       <description>TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
 https://github.com/jimbojsb/traefik-docker-local-dev
-Background This is something multiple people have asked me how to achieve, so I finally sat down to write this up. This guide will show you how to take an existing collection of web applications that listen on port 80 for local dev and give them a fully working SSL setup.</description>
+My expectation is you make your own private version of this repo with these files as the skeleton. You may never need anything more than these files depending on how crazy you want to get with the feature set of Traefik.
+Background This is something multiple people have asked me how to achieve, so I finally sat down to write this up.</description>
     </item>
     
   </channel>

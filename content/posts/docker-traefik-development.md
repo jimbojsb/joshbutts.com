@@ -10,6 +10,8 @@ title = "Using Traefik, Docker and Let's Encrypt to manage multiple local develo
 Fine, just skip directly to the Github repo that has a complete example of how to do this:  
 [https://github.com/jimbojsb/traefik-docker-local-dev](https://github.com/jimbojsb/traefik-docker-local-dev)
 
+My expectation is you make your own private version of this repo with these files as the skeleton. You may never need anything more than these files depending on how crazy you want to get with the feature set of Traefik.
+
 ### Background
 
 This is something multiple people have asked me how to achieve, so I finally sat down to write this up. This guide will show you how to take an existing collection of web applications that listen on port 80 for local dev and give them a fully working SSL setup. It will also allow you to not have to manually map high-numbered ports for them, and to be able to run all of them at the same time, rather than having to share port 80, or 8080, or keep some sort of external list of which app is using which port. 
