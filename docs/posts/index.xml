@@ -6,10 +6,19 @@
     <description>Recent content in Posts on Josh Butts | joshbutts.com</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 22 Feb 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Mon, 24 Feb 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="https://joshbutts.com/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>A quick Bash function to Open TablePlus</title>
+      <link>https://joshbutts.com/posts/tableplus-shortcuts/</link>
+      <pubDate>Mon, 24 Feb 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://joshbutts.com/posts/tableplus-shortcuts/</guid>
+      <description>function tp { PORT=$(docker-compose port mysql 3306 | cut -d: -f2) NAME=$(basename $(pwd)) DATABASE=$(cat docker-compose.yml | grep MYSQL_DATABASE | cut -d: -f2 | xargs) open &amp;#34;mysql://root:root@127.0.0.1:$PORT/$DATABASE?Enviroment=local&amp;amp;Name=$NAME&amp;amp;statusColor=DAEBC2&amp;#34; } </description>
+    </item>
     
     <item>
       <title>Using Traefik, Docker and Let&#39;s Encrypt to manage multiple local development projects</title>
