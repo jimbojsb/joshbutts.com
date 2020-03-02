@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Josh Butts | joshbutts.com</title>
-    <link>https://joshbutts.com/</link>
-    <description>Recent content on Josh Butts | joshbutts.com</description>
+    <title>php on Josh Butts | joshbutts.com</title>
+    <link>https://joshbutts.com/tags/php/</link>
+    <description>Recent content in php on Josh Butts | joshbutts.com</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Mon, 02 Mar 2020 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="https://joshbutts.com/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://joshbutts.com/tags/php/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -19,18 +19,6 @@
       <guid>https://joshbutts.com/posts/patching-xdebug-docker-for-mac/</guid>
       <description>Background on how Docker for Mac works Docker is a Linux-only technology. Docker for Mac uses a small (very small) Linux VM to implement what &amp;ldquo;feels like&amp;rdquo; native Docker support on Mac OS. The VM is implemented using XHyve and MacOS&amp;rsquo;s not-much-publicized native hypervisor support. The fact that Docker runs in a VM is ultimately the source of this issue, though that&amp;rsquo;s not being entirely fair.
 Why is everything that has to do with time in computing hard?</description>
-    </item>
-    
-    <item>
-      <title>Using Traefik, Docker, and Let&#39;s Encrypt to manage multiple local development projects</title>
-      <link>https://joshbutts.com/posts/traefik-docker-local-dev/</link>
-      <pubDate>Sat, 22 Feb 2020 00:00:00 +0000</pubDate>
-      
-      <guid>https://joshbutts.com/posts/traefik-docker-local-dev/</guid>
-      <description>TL;DR Fine, just skip directly to the Github repo that has a complete example of how to do this:
-https://github.com/jimbojsb/traefik-docker-local-dev
-My expectation is you make your own private version of this repo with these files as the skeleton. You may never need anything more than these files depending on how crazy you want to get with the feature set of Traefik.
-Background This is something multiple people have asked me how to achieve, so I finally sat down to write this up.</description>
     </item>
     
   </channel>

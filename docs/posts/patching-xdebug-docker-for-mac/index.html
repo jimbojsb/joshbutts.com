@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="author" content="Josh Butts">
+    <meta name="description" content="Personal website of Josh Butts">
+    <meta name="keywords" content="blog,developer,personal">
+
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Patching Xdebug performance issues on Docker for Mac"/>
+<meta name="twitter:description" content="Background on how Docker for Mac works Docker is a Linux-only technology. Docker for Mac uses a small (very small) Linux VM to implement what &ldquo;feels like&rdquo; native Docker support on Mac OS. The VM is implemented using XHyve and MacOS&rsquo;s not-much-publicized native hypervisor support. The fact that Docker runs in a VM is ultimately the source of this issue, though that&rsquo;s not being entirely fair.
+Why is everything that has to do with time in computing hard?"/>
+
+    <meta property="og:title" content="Patching Xdebug performance issues on Docker for Mac" />
+<meta property="og:description" content="Background on how Docker for Mac works Docker is a Linux-only technology. Docker for Mac uses a small (very small) Linux VM to implement what &ldquo;feels like&rdquo; native Docker support on Mac OS. The VM is implemented using XHyve and MacOS&rsquo;s not-much-publicized native hypervisor support. The fact that Docker runs in a VM is ultimately the source of this issue, though that&rsquo;s not being entirely fair.
+Why is everything that has to do with time in computing hard?" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://joshbutts.com/posts/patching-xdebug-docker-for-mac/" />
+<meta property="article:published_time" content="2020-03-02T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-03-02T00:00:00+00:00" />
+
+
+    
+      <base href="https://joshbutts.com/posts/patching-xdebug-docker-for-mac/">
+    
+    <title>
+  Patching Xdebug performance issues on Docker for Mac · Josh Butts | joshbutts.com
+</title>
+
+    
+      <link rel="canonical" href="https://joshbutts.com/posts/patching-xdebug-docker-for-mac/">
+    
+
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,700%7CMerriweather:300,700%7CSource+Code+Pro:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" integrity="sha256-l85OmPOjvil/SOvVt3HnSSjzF1TUMyT9eV0c2BzEGzU=" crossorigin="anonymous" />
+
+    
+      
+      
+      <link rel="stylesheet" href="https://joshbutts.com/css/coder.min.a4f332213a21ce8eb521670c614470c58923aaaf385e2a73982c31dd7642decb.css" integrity="sha256-pPMyITohzo61IWcMYURwxYkjqq84XipzmCwx3XZC3ss=" crossorigin="anonymous" media="screen" />
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    <link rel="icon" type="image/png" href="https://joshbutts.com/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="https://joshbutts.com/images/favicon-16x16.png" sizes="16x16">
+
+    <meta name="generator" content="Hugo 0.64.1" />
+  </head>
+
+  
+  
+  <body class="colorscheme-light">
+    <main class="wrapper">
+      <nav class="navigation">
+  <section class="container">
+    <a class="navigation-title" href="https://joshbutts.com/">
+      Josh Butts | joshbutts.com
+    </a>
+    
+    <input type="checkbox" id="menu-toggle" />
+    <label class="menu-button float-right" for="menu-toggle"><i class="fas fa-bars"></i></label>
+    <ul class="navigation-list">
+      
+        
+          <li class="navigation-item">
+            <a class="navigation-link" href="https://joshbutts.com/posts/">Blog</a>
+          </li>
+        
+      
+      
+    </ul>
+    
+  </section>
+</nav>
+
+
+      <div class="content">
+        
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">Patching Xdebug performance issues on Docker for Mac</h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fas fa-calendar"></i>
+              <time datetime='2020-03-02T00:00:00Z'>
+                March 2, 2020
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fas fa-clock"></i>
+              9-minute read
+            </span>
+          </div>
+          
+          <div class="tags">
+  <i class="fas fa-tag"></i>
+    <a href="https://joshbutts.com/tags/docker/">docker</a>
+      <span class="separator">•</span>
+    <a href="https://joshbutts.com/tags/php/">php</a></div>
+
+        </div>
+      </header>
+
+      <div>
+        
+        <h3 id="background-on-how-docker-for-mac-works">Background on how Docker for Mac works</h3>
+<p>Docker is a Linux-only technology. Docker for Mac uses a small (very small) Linux VM to implement what &ldquo;feels like&rdquo; native Docker support on Mac OS. The VM is implemented using XHyve and MacOS&rsquo;s not-much-publicized native hypervisor support. The fact that Docker runs in a VM is ultimately the source of this issue, though that&rsquo;s not being entirely fair.</p>
+<h3 id="why-is-everything-that-has-to-do-with-time-in-computing-hard">Why is everything that has to do with time in computing hard?</h3>
+<p>The actual issue that we&rsquo;re dealing with here is that when your Mac sleeps, obviously programs stop executing and to some extent, time is suspended within the OS. When it wakes up again, you&rsquo;re generally oblivious to any complexity there because of smart people having solved this problem and because of time syncing tools like NTP.</p>
+<p><em>However</em>, because nothing is ever that easy, we run into some issues. When your computer sleeps, so does the VM that Docker uses. When that VM wakes up again, there are several complex things happening, but the basic story is that the Linux kernel inside the VM freaks out and doesn&rsquo;t know what time it is. This causes it to distrust its default system clock source (TSC, &ldquo;Time Stamp Counter&rdquo;), and fall back to another available time source. That time source, HPET (&ldquo;High Precision Event Timer&rdquo;), is much more reliable however it&rsquo;s also much, much slower to access. The time source that we want to be using in almost ever circumstance is TSC. This is a &ldquo;userland&rdquo; time source and while it can be affected by things like how busy your processor is, that is largely mitigated by NTP, which Docker for Mac uses to keep its VM in close sync with the host. More reading on this <a href="https://blog.packagecloud.io/eng/2017/03/08/system-calls-are-much-slower-on-ec2/">here</a>.</p>
+<p>The annoying thing is that currently the only known resolution for this is to &ldquo;reboot&rdquo; Docker for Mac, which will cause the clock sync to be &ldquo;fresh&rdquo; and will let the VM trust the fast TSC clock source again. There does not appear to be any way to convince a running Docker for Mac VM to revert back to TSC once it has marked it as an unstable time source. Realistically, for people who pick their laptop up and close it and move around frequently, it&rsquo;s untennable to reboot every local container you have running every time you open your laptop.</p>
+<p>There are several open issues on the topic on various Github repos (<a href="https://github.com/docker/for-mac/issues/3455">Docker for Mac</a>, <a href="https://github.com/machyve/xhyve/issues/36">xhyve</a>).The challenge appears to be, as of this writing, that everyone is blaming an upstream project (not unreasonable in this case), to the point where the finger is left pointing at a lack of exposed APIs from MacOS itself.</p>
+<p>This is also affecting other heavy users of <code>gettimeofday</code> on Docker for Mac. <code>EXPLAIN</code> on Postgres is a <a href="https://benchling.engineering/analyzing-performance-analysis-performance-56cb2e212629">notable example</a></p>
+<h3 id="so-how-does-this-affect-xdebug">So how does this affect Xdebug?</h3>
+<p>One of the useful things Xdebug does is collect timing data. Even if you&rsquo;re not profiling, Xdebug is making calls out to <code>gettimeofday()</code> constantly during your script execution so that it can provide that information on the stack trace output in case an exception is thrown. During an average Laravel request, this means Xdebug is making thousands upon thousands of calls out to the OS to get the current time. This is normally not <em>much</em> of a problem except in in the scenario outlined above, where suddenly getting the current time becomes much, much more expensive.</p>
+<p>In my brief testing, this can add more than one order of magnitude to the time it takes to execute a script, depending on how deep the stack is, to the point where many requests that might take about 1 second on my laptop are starting to hit the 30 second <code>max_execution_time</code>.</p>
+<p>This issue was <a href="https://bugs.xdebug.org/view.php?id=1701">raised</a> on the Xdebug issue tracker, and Derick said, I think rightly so, that he was not interested in applying yet another configuration flag for Xdebug to support something that is clearly a Docker problem.</p>
+<h3 id="patching-xdebug">Patching Xdebug</h3>
+<p>Luckily for those who are interested in a short or medium term fix, Xdebug already has one central wrapper for its timing calls so we can hack this in one function and it&rsquo;ll be solved across the board.</p>
+<p><em>Note, I would consider this an &ldquo;advanced manuever&rdquo;. You need to be comfortable compiling C code in order to proceed, though for most people on most systems, this should &ldquo;just work&rdquo;.</em></p>
+<p>We can start by checking out a function called <code>xdebug_get_utime</code> in what is aptly named <code>usefulstuff.c</code> (<a href="https://github.com/xdebug/xdebug/blob/master/src/lib/usefulstuff.c">source here</a>). We can see below that this function is already aware of some differences in what time functions might be available and has a macro that might cause this function to return <code>0</code> in some scenarios. This is a good sign, because it means the rest of Xdebug must be generally OK with returning 0 here.</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#fff;font-weight:bold">double</span> xdebug_get_utime(<span style="color:#fff;font-weight:bold">void</span>)
+{
+<span style="color:#0f0;font-weight:bold">#</span><span style="color:#0f0;font-weight:bold">ifdef HAVE_GETTIMEOFDAY</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold"></span>	<span style="color:#fff;font-weight:bold">struct</span> timeval tp;
+	<span style="color:#fff;font-weight:bold">long</span> sec = <span style="color:#ff0;font-weight:bold">0L</span>;
+	<span style="color:#fff;font-weight:bold">double</span> msec = <span style="color:#ff0;font-weight:bold">0.0</span>;
+
+	<span style="color:#fff;font-weight:bold">if</span> (gettimeofday((<span style="color:#fff;font-weight:bold">struct</span> timeval *) &amp;tp, <span style="color:#fff;font-weight:bold">NULL</span>) == <span style="color:#ff0;font-weight:bold">0</span>) {
+		sec = tp.tv_sec;
+		msec = (<span style="color:#fff;font-weight:bold">double</span>) (tp.tv_usec / MICRO_IN_SEC);
+
+		<span style="color:#fff;font-weight:bold">if</span> (msec &gt;= <span style="color:#ff0;font-weight:bold">1.0</span>) {
+			msec -= (<span style="color:#fff;font-weight:bold">long</span>) msec;
+		}
+		<span style="color:#fff;font-weight:bold">return</span> msec + sec;
+	}
+<span style="color:#0f0;font-weight:bold">#</span><span style="color:#0f0;font-weight:bold">endif</span><span style="color:#0f0;font-weight:bold">
+</span><span style="color:#0f0;font-weight:bold"></span>	<span style="color:#fff;font-weight:bold">return</span> <span style="color:#ff0;font-weight:bold">0</span>;
+}
+</code></pre></div><p>Initially I was going to just hijack that existing macro and define it to false no matter what, but I realized that appears to be coming from <code>time.h</code> and I didn&rsquo;t want to inadvertently break something beyond my understanding elsewhere in the compile chain. So, I decided to fork the repo and just delete all the code within that <code>#ifdef</code> statement. After the changes, this function now looks like:</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#fff;font-weight:bold">double</span> xdebug_get_utime(<span style="color:#fff;font-weight:bold">void</span>)
+{
+	<span style="color:#fff;font-weight:bold">return</span> <span style="color:#ff0;font-weight:bold">0</span>;
+}
+</code></pre></div><p>My fork of Xdebug is available here: <a href="https://github.com/jimbojsb/xdebug">jimbojsb/xdebug</a>. You&rsquo;re welcome to clone and compile this version if you want, though I can&rsquo;t promise that I&rsquo;ll be diligent about keeping it up to date with the upstream repo, as my use case won&rsquo;t see me compiling this very often. It would probably be better to maintain your own copy if you want to keep up to date on your own terms.</p>
+<h3 id="compiling-and-installing-our-changes">Compiling and installing our changes</h3>
+<p>I&rsquo;m going to show how to compile this in a <code>Dockerfile</code> as I can&rsquo;t imagine why you&rsquo;d care about any of this otherwise. My most commonly used base image is <code>phusion/baseimage</code> which is Ubuntu-based. If you&rsquo;re using another flavor like Alpine, your commands will vary, primarily around what&rsquo;s required to get a working build environment.</p>
+<h6 id="step-1-build-and-compile-xdebug-in-isolation">Step 1: Build and compile Xdebug in isolation</h6>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile" data-lang="Dockerfile"><span style="color:#fff;font-weight:bold">FROM</span><span style="color:#0ff;font-weight:bold"> phusion/baseimage</span><span style="color:#f00">
+</span><span style="color:#f00"></span><span style="color:#fff;font-weight:bold">RUN</span> apt-add-repository -y ppa:ondrej/php <span style="color:#0ff;font-weight:bold">\
+</span><span style="color:#0ff;font-weight:bold"></span>    &amp;&amp; install_clean <span style="color:#0ff;font-weight:bold">\
+</span><span style="color:#0ff;font-weight:bold"></span>        pkg-config <span style="color:#0ff;font-weight:bold">\
+</span><span style="color:#0ff;font-weight:bold"></span>        php7.3-dev <span style="color:#0ff;font-weight:bold">\
+</span><span style="color:#0ff;font-weight:bold"></span>        git<span style="color:#f00">
+</span><span style="color:#f00"></span><span style="color:#f00">
+</span><span style="color:#f00"></span><span style="color:#fff;font-weight:bold">WORKDIR</span><span style="color:#0ff;font-weight:bold"> /root</span><span style="color:#f00">
+</span><span style="color:#f00"></span><span style="color:#fff;font-weight:bold">RUN</span> git clone https://github.com/jimbojsb/xdebug.git<span style="color:#f00">
+</span><span style="color:#f00"></span><span style="color:#fff;font-weight:bold">WORKDIR</span><span style="color:#0ff;font-weight:bold"> /root/xdebug</span><span style="color:#f00">
+</span><span style="color:#f00"></span><span style="color:#fff;font-weight:bold">RUN</span> phpize &amp;&amp; ./configure &amp;&amp; make<span style="color:#f00">
+</span></code></pre></div><p>Here we&rsquo;re using the very common <code>ondrej/php</code> PPA to install the latest PHP development package, as well as git and <code>pkg-config</code> which is usually needed when compiling PHP from source. This example is PHP 7.3 as that happens to be where what environment I&rsquo;m using currently for the apps that are most affected by this issue, but there should be no changes required for PHP 7.4.</p>
+<p>Note that we&rsquo;re not running <code>make install</code>. My intention here is to use Docker multi-stage builds in order to &ldquo;pluck&rdquo; the output of the compile process (<code>xdebug.so</code>) into the actual Docker image that I&rsquo;m using. If you don&rsquo;t want to do that, perhaps if you already are committed to having a full build toolchain in your Docker image, you could just include these steps in your existing Dockerfile and run <code>make install</code> and be done with it.</p>
+<p>To reference the output of this Docker build in another image, we should tag this with something easy to remember during the build. My build command looks like this: <code>docker build -t php-xdebug -f Dockerfile-xdebug .</code></p>
+<h6 id="step-2-pluck-xdebugso-into-our-real-docker-image">Step 2: Pluck xdebug.so into our real Docker image</h6>
+<p>Once you&rsquo;ve successfully build the Dockerfile as outlined above, you&rsquo;ll then want to use the output in your actual app&rsquo;s Dockerfile. We can do that by using and advanced <code>COPY</code> command, as below:</p>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-Dockerfile" data-lang="Dockerfile"><span style="color:#fff;font-weight:bold">COPY</span> --from=php-xdebug /root/xdebug/modules/xdebug.so /usr/lib/php/20180731/xdebug.so<span style="color:#f00">
+</span></code></pre></div><p>The parts that are important here are the <code>--from=</code> and the destination inside <code>/usr/lib</code>. The <code>--from=</code> value must match what you tagged your Xdebug build image above as. The destination in <code>/usr/lib</code> will vary, you may need to inspect your Docker image to find out where PHP extensions are expected to live. If you&rsquo;re using <code>ondrej/php</code> the above location will be correct for PHP 7.3, but will need to be updated with the appropriate API version (the date part of the path) depending on which major release of PHP you&rsquo;re using. If you&rsquo;re using Alpine or some other Linux flavor, this may look entirely different.</p>
+<p>We&rsquo;re just plucking the Xdebug extension itself here, I didn&rsquo;t bother copying any of the stock <code>xdebug.ini</code> extension configuration files as I already had a custom one in place and didn&rsquo;t need it. You could certainly copy that over as well if you need it. You can also keep installing Xdebug from the PHP package source that you normally use and just overwrite the <code>xdebug.so</code> file later in your Docker build.</p>
+<h3 id="wrap-up">Wrap Up</h3>
+<p>This fix renders the time issues on Docker for Mac a non-issue for Xdebug purposes. It doesn&rsquo;t fix other time related problem (for example, if your PHP script is making thousands of timing calls itself). It is also kneecapping XDebug&rsquo;s ability to time things, so just know that is a trade off here. I wouldn&rsquo;t trust any profiling data generated by Xdebug if you apply this patch.</p>
+<p>Is this ideal? No. However the performance issues caused by this problem are also not acceptable, so this might be a workable strategy for some until this problem is fixed at the Docker for Mac level. I was not willing to work without Xdebug so this was the compromise I came up with. I&rsquo;ve also offered to contribute a compile-time flag to Xdebug that would make this change happen, but I&rsquo;m skeptical that would be accepted, and I mostly agree with that stance.</p>
+<p>As part of this exercise I also experimented with a workflow where I completely disable Xdebug from PHP when I&rsquo;m not actively going to be using it. I believe for heavy projects, this is a worthwhile thing to do. If you&rsquo;re doing work like changing HTML templates or some other not-likely-step-debug task, you&rsquo;ll get even more performance by just turning it Xdebug off. I&rsquo;ll probably end up combining both approaches in my projects.</p>
+
+      </div>
+
+
+      <footer>
+        
+
+
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+      </div>
+
+      <footer class="footer">
+  <section class="container">
+    
+    
+      
+        © 2020
+      
+       Josh Butts 
+    
+    
+    
+  </section>
+</footer>
+
+    </main>
+
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-158918590-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+
+    
+
+  </body>
+
+</html>
