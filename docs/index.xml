@@ -22,6 +22,15 @@ Why is everything that has to do with time in computing hard?</description>
     </item>
     
     <item>
+      <title>Advanced TablePlus usage from the command line on MacOS</title>
+      <link>https://joshbutts.com/posts/tableplus-shortcuts/</link>
+      <pubDate>Mon, 24 Feb 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://joshbutts.com/posts/tableplus-shortcuts/</guid>
+      <description>Foreword I spent probably about half of my professional career as a hardcore Navicat user. Navicat was an actual good SQL GUI (MySQL specifically) that worked on Windows. When I later moved to MacOS, they had a version there too, though it never really felt as polished as the Windows version. Navicat still exists, but for whatever reason I transitioned to Sequel Pro (&amp;ldquo;Pancakes&amp;rdquo;). I used that for many years, but alas, it has become somewhat abandonware.</description>
+    </item>
+    
+    <item>
       <title>Using Traefik, Docker, and Let&#39;s Encrypt to manage multiple local development projects</title>
       <link>https://joshbutts.com/posts/traefik-docker-local-dev/</link>
       <pubDate>Sat, 22 Feb 2020 00:00:00 +0000</pubDate>

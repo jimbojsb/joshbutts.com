@@ -10,11 +10,11 @@
     <meta name="keywords" content="blog,developer,personal">
 
     <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="A quick Bash function to Open TablePlus"/>
-<meta name="twitter:description" content="function tp { PORT=$(docker-compose port mysql 3306 | cut -d: -f2) NAME=$(basename $(pwd)) DATABASE=$(cat docker-compose.yml | grep MYSQL_DATABASE | cut -d: -f2 | xargs) open &#34;mysql://root:root@127.0.0.1:$PORT/$DATABASE?Enviroment=local&amp;Name=$NAME&amp;statusColor=DAEBC2&#34; } "/>
+<meta name="twitter:title" content="Advanced TablePlus usage from the command line on MacOS"/>
+<meta name="twitter:description" content="Foreword I spent probably about half of my professional career as a hardcore Navicat user. Navicat was an actual good SQL GUI (MySQL specifically) that worked on Windows. When I later moved to MacOS, they had a version there too, though it never really felt as polished as the Windows version. Navicat still exists, but for whatever reason I transitioned to Sequel Pro (&ldquo;Pancakes&rdquo;). I used that for many years, but alas, it has become somewhat abandonware."/>
 
-    <meta property="og:title" content="A quick Bash function to Open TablePlus" />
-<meta property="og:description" content="function tp { PORT=$(docker-compose port mysql 3306 | cut -d: -f2) NAME=$(basename $(pwd)) DATABASE=$(cat docker-compose.yml | grep MYSQL_DATABASE | cut -d: -f2 | xargs) open &#34;mysql://root:root@127.0.0.1:$PORT/$DATABASE?Enviroment=local&amp;Name=$NAME&amp;statusColor=DAEBC2&#34; } " />
+    <meta property="og:title" content="Advanced TablePlus usage from the command line on MacOS" />
+<meta property="og:description" content="Foreword I spent probably about half of my professional career as a hardcore Navicat user. Navicat was an actual good SQL GUI (MySQL specifically) that worked on Windows. When I later moved to MacOS, they had a version there too, though it never really felt as polished as the Windows version. Navicat still exists, but for whatever reason I transitioned to Sequel Pro (&ldquo;Pancakes&rdquo;). I used that for many years, but alas, it has become somewhat abandonware." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://joshbutts.com/posts/tableplus-shortcuts/" />
 <meta property="article:published_time" content="2020-02-24T00:00:00+00:00" />
@@ -25,7 +25,7 @@
       <base href="https://joshbutts.com/posts/tableplus-shortcuts/">
     
     <title>
-  A quick Bash function to Open TablePlus · Josh Butts | joshbutts.com
+  Advanced TablePlus usage from the command line on MacOS · Josh Butts | joshbutts.com
 </title>
 
     
@@ -91,7 +91,7 @@
     <article>
       <header>
         <div class="post-title">
-          <h1 class="title">A quick Bash function to Open TablePlus</h1>
+          <h1 class="title">Advanced TablePlus usage from the command line on MacOS</h1>
         </div>
         <div class="post-meta">
           <div class="date">
@@ -103,7 +103,7 @@
             </span>
             <span class="reading-time">
               <i class="fas fa-clock"></i>
-              1-minute read
+              5-minute read
             </span>
           </div>
           
@@ -111,20 +111,56 @@
   <i class="fas fa-tag"></i>
     <a href="https://joshbutts.com/tags/docker/">docker</a>
       <span class="separator">•</span>
-    <a href="https://joshbutts.com/tags/bash/">bash</a></div>
+    <a href="https://joshbutts.com/tags/bash/">bash</a>
+      <span class="separator">•</span>
+    <a href="https://joshbutts.com/tags/mac/">mac</a></div>
 
         </div>
       </header>
 
       <div>
         
-        <div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#fff;font-weight:bold">function</span> tp {
+        <p><img src="https://tableplus.com/resources/images/workspace@2x.png" alt="Traefik"></p>
+<h3 id="foreword">Foreword</h3>
+<p>I spent probably about half of my professional career as a hardcore Navicat user. Navicat was an actual <em>good</em> SQL GUI (MySQL specifically) that worked on Windows. When I later moved to MacOS, they had a version there too, though it never really felt as polished as the Windows version. Navicat still exists, but for whatever reason I transitioned to Sequel Pro (&ldquo;Pancakes&rdquo;). I used that for many years, but alas, it has become somewhat abandonware.</p>
+<p>Enter <a href="https://tableplus.com/">TablePlus</a>. I learned that this thing even existed from Taylor Otwell on Twitter. It&rsquo;s modern, kept up to date, supports every database you&rsquo;d ever credibly want to connect to, and pretty to look at. Yes, it costs money, but often the good things in life do. I&rsquo;ve happily bought a license for it and for anyone on my team who wants to use it. Some of them still insist on using DataGrip, which I cannot understand.</p>
+<h3 id="artisan-dbopen">artisan db:open</h3>
+<p>A few months back, Caleb Porzio <a href="https://gist.github.com/calebporzio/20b7d71b8b2690c788f28070f00edcbc">tweeted a Gist</a> about how to use the <code>open</code> command on MacOS and a custom Artisan command to read your Laravel DB config and create a proper <code>mysql://</code> link that would cause TablePlus to open your local dev database without having to set up a connection. This very interesting, but I wanted more, as evidenced by my comment that remains on the Gist to this day.</p>
+<h3 id="what-is-more">What is &ldquo;more&rdquo;</h3>
+<p>For starters, my teams all exclusively use Docker and Docker Compose for local development. This means, in short, that the PHP we have installed on our macs, if it even actually is installed, isn&rsquo;t guaranteed to be a good enough environment to invoke any given Laravel project&rsquo;s artisan command. We use the in-container PHP binaries for anything involving PHP work.</p>
+<p>So, with that restriction in mind, Caleb&rsquo;s <code>artisan db:open</code> wouldn&rsquo;t quite work, but an equivalent shell function would. Turns out someone already provided the baseline version of that on the Gist. However, I wanted to solve for two more things:</p>
+<ol>
+<li>
+<p>I really really wanted to achieve the &ldquo;color coding&rdquo; and &ldquo;environment tagging&rdquo; open shell-opened TablePlus windows. I have come to rely on this visual cue to know whether I have a local or production connection open. Since TablePlus seemed to support url-style arguments for some of what Caleb had done, I figured it was possible, but found it to be undocumented.</p>
+</li>
+<li>
+<p>My teams run dozens of Laravel projects, and I was growing tired of keeping an agreed upon list of database ports so that we could run multiple projects and connect to their DBs without having any port collisions. Docker can auto-assign a high-numbered non-colliding port but its not predictable, and so it would be a pain to managed saved database connections. I figured I could read the current state from my version of the function and pick out the port that had been assigned, that way it would always be correct and we could ditch the static port mappsings altogether.</p>
+</li>
+</ol>
+<h3 id="my-version">My Version</h3>
+<div class="highlight"><pre style="color:#e5e5e5;background-color:#000;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#fff;font-weight:bold">function</span> tp {
 	PORT=<span style="color:#fff;font-weight:bold">$(</span>docker-compose port mysql <span style="color:#ff0;font-weight:bold">3306</span> | cut -d: -f2<span style="color:#fff;font-weight:bold">)</span>
 	NAME=<span style="color:#fff;font-weight:bold">$(</span>basename <span style="color:#fff;font-weight:bold">$(</span><span style="color:#fff;font-weight:bold">pwd</span><span style="color:#fff;font-weight:bold">))</span>
 	DATABASE=<span style="color:#fff;font-weight:bold">$(</span>cat docker-compose.yml | grep MYSQL_DATABASE | cut -d: -f2 | xargs<span style="color:#fff;font-weight:bold">)</span>
 	open <span style="color:#0ff;font-weight:bold">&#34;mysql://root:root@127.0.0.1:</span>$PORT<span style="color:#0ff;font-weight:bold">/</span>$DATABASE<span style="color:#0ff;font-weight:bold">?Enviroment=local&amp;Name=</span>$NAME<span style="color:#0ff;font-weight:bold">&amp;statusColor=DAEBC2&#34;</span>
 }
-</code></pre></div>
+</code></pre></div><p>The above bash function was my version of how to achieve this. I&rsquo;m using some basic bash-fu and dockuer-compose features to achieve this. You almost certainly don&rsquo;t want my very specific version of this, but this should be enough to show you the how to concatenate a URL together based on how you want to detect the database information.</p>
+<p>The key pieces of the URL format are as follows:</p>
+<ul>
+<li><strong>[scheme]://</strong>: I&rsquo;m using <code>mysql://</code> but I tested a few other obvious ones and they work (<code>postgres://</code>, <code>redis://</code>)</li>
+<li><strong>[username]:[password]@</strong>: These are passed using standard HTTP-style colon-separated-followed-by-@ credentials (also the same as JDBC-style)</li>
+<li><strong>[hostname]</strong>: self explanatory I hope&hellip;</li>
+<li><strong>:[port]</strong>: not required if you&rsquo;re using 3306 (running locally, only have one project, etc). If you&rsquo;ve mapped some other high-numbered port via Docker or similar, you need to pass it after the host</li>
+<li><strong>/[database]</strong>: these vary slightly per server type, but for MySQL, this is the database name on the server. It&rsquo;s optional if you want to not pre-select one.</li>
+<li><strong>Enviroment=</strong>: Yes there is a typo in this query string key name. This is analgous to the dropdown labeled &ldquo;Tag&rdquo; in the connection editor in the GUI. Choices are <code>local</code>, <code>testing</code>, <code>development</code>, <code>staging</code>, <code>production</code>. This does not seem to accept any other values. This value is color coded in the UI independently of anythign else, and shows at the right hand side of the connection status bar at the top of the window.</li>
+<li><strong>Name=</strong>: This option will show on the left hand side of the connection status bar, to the left of the database name. This is the equivalent of the &ldquo;Name&rdquo; field in the connection editor window</li>
+<li><strong>statusColor=</strong>: This is an RGB hex string (6 hex characters, all caps, no leading #). This can be any hex value. Since I use the stock green color in the connection editor window for local development connections, I pulled that color out with an eye dropper and determined it to be <code>DAEBC2</code>.</li>
+</ul>
+<p>So, the final url that one might build for a local dev database that was MySQL might look like this:
+<code>mysql://username:password@hostname:portnumber/databasename?Enviroment=local&amp;Name=local&amp;statusColor=DAEBC2</code></p>
+<h3 id="wrap-up">Wrap Up</h3>
+<p>Hopefully TablePlus documents these things and my blog post on it becomes irrelevant in the future. Until then, if you&rsquo;re as picky about everything being &ldquo;just so&rdquo; as I am, you know have full control over TablePlus &ldquo;dynamic&rdquo; connections from whatever command-line context you like.</p>
+
       </div>
 
 
