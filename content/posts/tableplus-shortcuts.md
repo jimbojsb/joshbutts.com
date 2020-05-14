@@ -1,5 +1,5 @@
 +++
-date = 2020-02-24T00:00:00Z
+date = 2020-05-13T00:00:00Z
 slug = "tableplus-shortcuts"
 tags = ["docker", "bash", "mac"]
 title = "Advanced TablePlus usage from the command line on MacOS"
